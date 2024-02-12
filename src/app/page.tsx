@@ -1,67 +1,35 @@
-import { unstable_noStore as noStore } from "next/cache";
-import Link from "next/link";
+import iphone from "~/../public/iphone.png"
 
-import { CreatePost } from "~/app/_components/create-post";
-import { api } from "~/trpc/server";
+import Link from "next/link"
+import Image from "next/image"
 
-export default async function Home() {
-  noStore();
-  const hello = await api.post.hello.query({ text: "from tRPC" });
-
+export default async function Page() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-        <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-          Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
+    <div className="flex flex-col gap-20 px-14 py-16 max-md:items-center sm:h-[calc(100vh-5rem)] sm:flex-row sm:gap-12 md:gap-16 md:py-24 lg:justify-between lg:px-24">
+      <div className="flex h-full flex-col justify-center gap-8 md:gap-12">
+        <h1 className="w-min text-[2.5rem] font-black tracking-[-2px] *:inline-block *:pr-0.5 sm:text-6xl sm:tracking-[-4px] lg:text-7xl xl:text-8xl">
+          <span className="animate-hue-rotate bg-gradient-to-r from-lime-300 to-green-500 bg-clip-text text-transparent">
+            linktree
+          </span>
+          <span>charliee.dev</span>
         </h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-            href="https://create.t3.gg/en/usage/first-steps"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">First Steps →</h3>
-            <div className="text-lg">
-              Just the basics - Everything you need to know to set up your
-              database and authentication.
-            </div>
-          </Link>
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-            href="https://create.t3.gg/en/introduction"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">Documentation →</h3>
-            <div className="text-lg">
-              Learn more about Create T3 App, the libraries it uses, and how to
-              deploy it.
-            </div>
-          </Link>
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-2xl text-white">
-            {hello ? hello.greeting : "Loading tRPC query..."}
-          </p>
-        </div>
-
-        <CrudShowcase />
+        <p className="max-w-xl text-xl font-medium md:text-2xl md:font-semibold lg:text-3xl">
+          Hello there! I made this site to learn how to work with MySQL, Drizzle
+          ORM, and Planetscale DB. Press the button below to try it out!
+        </p>
+        <Link
+          href={"/create"}
+          className="grid h-14 w-full place-items-center rounded-full border text-xl font-medium shadow-[4px_4px_0px_0px] duration-300 active:translate-x-1 active:translate-y-1 active:shadow-none sm:w-64"
+        >
+          Create profile
+        </Link>
       </div>
-    </main>
-  );
-}
-
-async function CrudShowcase() {
-  const latestPost = await api.post.getLatest.query();
-
-  return (
-    <div className="w-full max-w-xs">
-      {latestPost ? (
-        <p className="truncate">Your most recent post: {latestPost.name}</p>
-      ) : (
-        <p>You have no posts yet.</p>
-      )}
-
-      <CreatePost />
+      <Image
+        src={iphone}
+        alt="iPhone preview"
+        className="animate-hue-rotate object-contain object-right"
+        priority
+      />
     </div>
-  );
+  )
 }
