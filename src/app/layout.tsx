@@ -25,7 +25,7 @@ export default function RootLayout({
       lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable} bg-primary`}
     >
-      <body className="flex min-h-screen flex-col bg-primary leading-snug tracking-tighter sm:overflow-hidden">
+      <body className="flex min-h-screen flex-col bg-primary leading-snug tracking-tighter duration-500 sm:overflow-hidden">
         <Toaster />
         <main className="min-h-[calc(100vh-5rem)] overflow-auto">
           {children}

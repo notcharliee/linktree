@@ -1,13 +1,12 @@
 "use client"
 
 import crypto from "crypto"
-
 import Image from "next/image"
-
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-
+import { TrashIcon } from "@radix-ui/react-icons"
 import {
   Form,
   FormControl,
@@ -18,9 +17,8 @@ import {
   FormMessage,
 } from "~/components/form"
 import { Input } from "~/components/input"
+import { Label } from "~/components/label"
 import { ColourPicker } from "~/components/picker"
-
-import { toast } from "sonner"
 
 const formSchema = z.object({
   username: z
@@ -48,6 +46,8 @@ const formSchema = z.object({
 })
 
 export default function CreateProfile() {
+  const router = useRouter()
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,14 +61,19 @@ export default function CreateProfile() {
     },
   })
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    toast("Profile created!", {
-      description: (
-        <pre className="mt-2 w-full whitespace-pre-wrap rounded border p-2 font-mono text-xs">
-          <code>{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    })
+  const fieldArray = useFieldArray({
+    control: form.control,
+    name: "links",
+  })
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if ((await fetch(`/${values.username}`)).ok)
+      return form.setError("username", {
+        message: "Username is already in use.",
+      })
+
+    document.body.style.opacity = "0"
+    setTimeout(() => router.push("/create/loading"), 500)
   }
 
   const user = form.watch()
@@ -84,11 +89,12 @@ export default function CreateProfile() {
 
   return (
     <div className="flex h-full flex-col items-center sm:h-[calc(100vh-5rem)] sm:flex-row">
-      <div className="mx-auto h-full w-full px-14 py-16 sm:overflow-auto md:py-24 lg:px-24">
+      {/* Form */}
+      <div className="h-full w-full mx-auto sm:overflow-auto">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mx-auto h-full w-full max-w-xl space-y-8"
+            className="w-full p-14 pt-20 mx-auto max-w-3xl space-y-8"
           >
             <FormField
               control={form.control}
@@ -137,7 +143,58 @@ export default function CreateProfile() {
                 </FormItem>
               )}
             />
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-4">
+              {fieldArray.fields.map((link, index) => (
+                <div className="flex flex-col gap-2" key={link.id}>
+                  <div className="flex justify-between items-center">
+                    <Label>Link {index + 1}</Label>
+                    <button onClick={() => fieldArray.remove(index)}>
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`links.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Example" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`links.${index}.href`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="https://example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
+              {!user.links.length && (
+                <div className="flex flex-col gap-2">
+                  <Label>Social Links</Label>
+                  <p className="text-[0.8rem] text-neutral-400">
+                    Add a social link to your profile.
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                className="flex h-9 self-start items-center rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => fieldArray.append({ name: "", href: "" })}
+              >
+                Add Link
+              </button>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-8 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FormField
                 control={form.control}
                 name="primaryColour"
@@ -205,9 +262,11 @@ export default function CreateProfile() {
           </form>
         </Form>
       </div>
-      <div className="h-px w-full border-t sm:hidden" />
+      {/* Separator */}
+      <div className="h-px sm:h-full w-full sm:w-px border-t sm:border-t-0 sm:border-l" />
+      {/* Preview */}
       <div
-        className="h-full w-full max-w-md bg-[var(--primary)] sm:overflow-auto sm:border-l"
+        className="h-full w-full max-w-md bg-[var(--primary)] sm:overflow-auto"
         style={
           {
             "--primary": user.primaryColour ?? "#FFFFFF",
@@ -216,7 +275,7 @@ export default function CreateProfile() {
           } as React.CSSProperties
         }
       >
-        <div className="flex w-full max-w-md flex-col gap-12 p-14 pt-20">
+        <div className="w-full max-w-md flex flex-col gap-12 p-14 pt-20">
           <div className="flex flex-col items-center">
             <Image
               src={avatar}
