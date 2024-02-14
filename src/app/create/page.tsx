@@ -2,11 +2,17 @@
 
 import crypto from "crypto"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
+
+import {
+  CheckCircledIcon,
+  CopyIcon,
+} from "@radix-ui/react-icons"
 
 import {
   Form,
@@ -20,12 +26,31 @@ import {
 import { Input } from "~/components/input"
 import { Label } from "~/components/label"
 import { ColourPicker } from "~/components/picker"
-
+import { Spinner } from "~/components/spinner"
 import { DraggableLink } from "./_components/draggable-link"
+import { toast } from "sonner"
 
-import { DndContext, closestCorners, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor, type DragEndEvent } from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
-import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
+import { createProfile } from "~/actions/profile"
+
+import {
+  DndContext,
+  closestCorners,
+  useSensors,
+  useSensor,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable"
+import {
+  restrictToVerticalAxis,
+  restrictToParentElement,
+} from "@dnd-kit/modifiers"
 
 // Form schema
 const formSchema = z.object({
@@ -42,9 +67,9 @@ const formSchema = z.object({
     .max(255, "Email must be shorter than 255 characters.")
     .email("This is not a valid email.")
     .optional(),
-  primaryColour: z.string().length(7, "Must be a valid hex code.").optional(),
-  secondaryColour: z.string().length(7, "Must be a valid hex code.").optional(),
-  accentColour: z.string().length(7, "Must be a valid hex code.").optional(),
+  primaryColour: z.string().length(7, "Must be a valid hex code."),
+  secondaryColour: z.string().length(7, "Must be a valid hex code."),
+  accentColour: z.string().length(7, "Must be a valid hex code."),
   links: z.array(
     z.object({
       name: z.string().max(32, "Name must be shorter than 32 characters."),
@@ -55,7 +80,8 @@ const formSchema = z.object({
 
 // Page content
 export default function CreateProfile() {
-  const router = useRouter()
+  const [loading, setLoading] = useState([ false, false ])
+  const [passphrase, setPassphrase] = useState("")
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,13 +102,29 @@ export default function CreateProfile() {
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if ((await fetch(`/${values.username}`)).ok)
-      return form.setError("username", {
-        message: "Username is already in use.",
-      })
+    try {
+      if ((await fetch(`/${values.username}`)).ok) {
+        console.log("❌ Username is unavailable.")
 
-    document.body.style.opacity = "0"
-    setTimeout(() => router.push("/create/loading?username=" + values.username), 500)
+        return form.setError("username", {
+          message: "Username is already in use.",
+        })
+      }
+    } catch {
+      console.log("✅ Username is available.")
+    }
+
+    document.body.querySelector("main")!.style.opacity = "0"
+    console.log("💫 Loading state active.")
+
+    setTimeout(() => {
+      setLoading([true, false])
+
+      createProfile(values).then(user => {
+        setPassphrase(user.passphrase)
+        setTimeout(() => setLoading([false, true]), 1000)
+      }).catch(error => { throw error })
+    }, 500)
   }
 
 
@@ -116,17 +158,10 @@ export default function CreateProfile() {
 
   const user = form.watch()
 
-  const avatar = user.email
-    ? "https://www.gravatar.com/avatar/" +
-      crypto
-        .createHash("md5")
-        .update(user.email.toLowerCase().trim())
-        .digest("hex") +
-      "?s=256"
-    : "/default_avatar.png"
-
-  return (
-    <main className="sm:h-screen flex flex-col items-center sm:flex-row sm:overflow-hidden">
+  if (loading[1] === false && loading[0] === true) return <PrimaryLoadingState />
+  if (loading[0] === false && loading[1] === true) return <SecondaryLoadingState passphrase={passphrase} username={user.username} />
+  if (loading.every(v => v === false)) return (
+    <main className="sm:h-screen flex flex-col items-center sm:flex-row sm:overflow-hidden duration-300">
       {/* Form */}
       <div className="h-full w-full mx-auto sm:overflow-auto">
         <Form {...form}>
@@ -230,7 +265,7 @@ export default function CreateProfile() {
                     <FormLabel>Primary Colour</FormLabel>
                     <FormControl>
                       <ColourPicker
-                        value={user.primaryColour!}
+                        value={user.primaryColour}
                         onChange={(value) =>
                           form.setValue("primaryColour", value)
                         }
@@ -249,7 +284,7 @@ export default function CreateProfile() {
                     <FormLabel>Secondary Colour</FormLabel>
                     <FormControl>
                       <ColourPicker
-                        value={user.secondaryColour!}
+                        value={user.secondaryColour}
                         onChange={(value) =>
                           form.setValue("secondaryColour", value)
                         }
@@ -268,7 +303,7 @@ export default function CreateProfile() {
                     <FormLabel>Accent Colour</FormLabel>
                     <FormControl>
                       <ColourPicker
-                        value={user.accentColour!}
+                        value={user.accentColour}
                         onChange={(value) =>
                           form.setValue("accentColour", value)
                         }
@@ -280,12 +315,15 @@ export default function CreateProfile() {
                 )}
               />
             </div>
-            <button
-              type="submit"
-              className="flex h-9 items-center rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Create Profile
-            </button>
+            <div className="space-y-2">
+              <button
+                type="submit"
+                className="flex h-9 items-center rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Create Profile
+              </button>
+              <p className="text-[0.8rem] text-neutral-400">A passphrase will be generated for you.</p>
+            </div>
           </form>
         </Form>
       </div>
@@ -306,8 +344,16 @@ export default function CreateProfile() {
           <div className="flex flex-col items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={avatar}
-              alt={avatar}
+              src={(user.email
+                ? "https://www.gravatar.com/avatar/" +
+                  crypto
+                    .createHash("md5")
+                    .update(user.email.toLowerCase().trim())
+                    .digest("hex") +
+                  "?s=256"
+                : "/default_avatar.png"
+              )}
+              alt={"User Avatar"}
               className="h-32 w-32 rounded-full border border-[var(--secondary)] sm:h-40 sm:w-40"
             />
             <span className="break-all pt-6 text-center text-2xl font-bold text-[var(--secondary)]">
@@ -334,4 +380,53 @@ export default function CreateProfile() {
       </div>
     </main>
   )
+}
+
+
+const PrimaryLoadingState = () => (
+  <main className="min-h-screen w-full flex flex-col items-center justify-center">
+    <div className="animate-in fade-in-0 zoom-in-75 slide-in-from-bottom-8 duration-500 ease-out text-center">
+      <div className="flex items-center gap-3">
+        <Spinner className="h-8 w-8" />
+        <h1 className="text-4xl font-medium leading-none">
+          creating your profile
+        </h1>
+      </div>
+      <p className="text-xl text-neutral-400 mt-2">
+        this may take a few seconds
+      </p>
+    </div>
+  </main>
+)
+
+const SecondaryLoadingState = (props: { passphrase: string, username: string }) => {
+  const handleClick = async () => {
+    toast.success("Copied to clipboard.")
+    await navigator.clipboard.writeText(props.passphrase)
+  }
+
+  return (
+    <main className="min-h-screen w-full flex flex-col items-center justify-center p-14">
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-3">
+          <CheckCircledIcon className="h-8 w-8 mt-auto hidden sm:block" />
+          <h1 className="text-4xl text-center font-medium leading-none">
+            profile created
+          </h1>
+        </div>
+        <p className="text-xl text-center text-neutral-400 mt-2">
+          copy the passphrase below and keep it somewhere safe
+        </p>
+        <div className="w-full flex gap-2.5 mt-8">
+          <Input value={props.passphrase} className="w-full font-mono truncate" readOnly />
+          <button className="h-9 min-w-9 rounded-md border" onClick={handleClick}>
+            <CopyIcon className="h-4 w-4 m-auto" />
+          </button>
+        </div>
+        <Link href={`/${props.username}`} className="text-sm text-center text-neutral-400 underline underline-offset-4 mt-4">
+          click here to go to your page
+        </Link>
+      </div>
+    </main>
+  )  
 }

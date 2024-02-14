@@ -4,6 +4,7 @@ import { relations } from "drizzle-orm"
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).unique().primaryKey(),
   username: varchar("username", { length: 32 }).unique().notNull(),
+  passphrase: varchar("passphrase", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -12,9 +13,9 @@ export const users = mysqlTable("users", {
 export const profiles = mysqlTable("profiles", {
   userId: varchar("user_id", { length: 36 }).unique().primaryKey(),
   bio: varchar("bio", { length: 100 }),
-  primaryColour: varchar("primary_colour", { length: 7 }),
-  secondaryColour: varchar("secondary_colour", { length: 7 }),
-  accentColour: varchar("accent_colour", { length: 7 }),
+  primaryColour: varchar("primary_colour", { length: 7 }).notNull(),
+  secondaryColour: varchar("secondary_colour", { length: 7 }).notNull(),
+  accentColour: varchar("accent_colour", { length: 7 }).notNull(),
 })
 
 export const links = mysqlTable("links", {

@@ -27,9 +27,9 @@ export const DraggableLink = (props: {
     username: string;
     bio?: string | undefined;
     email?: string | undefined;
-    primaryColour?: string | undefined;
-    secondaryColour?: string | undefined;
-    accentColour?: string | undefined;
+    primaryColour: string;
+    secondaryColour: string;
+    accentColour: string;
   }, unknown, {
     links: {
       name: string;
@@ -38,9 +38,9 @@ export const DraggableLink = (props: {
     username: string;
     bio?: string | undefined;
     email?: string | undefined;
-    primaryColour?: string | undefined;
-    secondaryColour?: string | undefined;
-    accentColour?: string | undefined;
+    primaryColour: string;
+    secondaryColour: string;
+    accentColour: string;
   }>,
   fieldArray: UseFieldArrayReturn<{
     username: string;
@@ -50,9 +50,9 @@ export const DraggableLink = (props: {
     }[];
     bio?: string | undefined;
     email?: string | undefined;
-    primaryColour?: string | undefined;
-    secondaryColour?: string | undefined;
-    accentColour?: string | undefined;
+    primaryColour: string;
+    secondaryColour: string;
+    accentColour: string;
   }, "links", "id">
 }) => {
   const {

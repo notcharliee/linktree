@@ -24,7 +24,7 @@ export default function RootLayout({
       lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable} bg-primary`}
     >
-      <body className="flex min-h-screen flex-col bg-primary leading-snug tracking-tighter duration-500">
+      <body className="flex min-h-screen flex-col bg-primary leading-snug tracking-tighter">
         <Toaster />
         {children}
       </body>
