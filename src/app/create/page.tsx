@@ -1,12 +1,13 @@
 "use client"
 
 import crypto from "crypto"
-import Image from "next/image"
+
 import { useRouter } from "next/navigation"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { TrashIcon } from "@radix-ui/react-icons"
+
 import {
   Form,
   FormControl,
@@ -20,6 +21,13 @@ import { Input } from "~/components/input"
 import { Label } from "~/components/label"
 import { ColourPicker } from "~/components/picker"
 
+import { DraggableLink } from "./_components/draggable-link"
+
+import { DndContext, closestCorners, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor, type DragEndEvent } from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
+
+// Form schema
 const formSchema = z.object({
   username: z
     .string()
@@ -45,6 +53,7 @@ const formSchema = z.object({
   ),
 })
 
+// Page content
 export default function CreateProfile() {
   const router = useRouter()
 
@@ -73,7 +82,36 @@ export default function CreateProfile() {
       })
 
     document.body.style.opacity = "0"
-    setTimeout(() => router.push("/create/loading"), 500)
+    setTimeout(() => router.push("/create/loading?username=" + values.username), 500)
+  }
+
+
+  const modifiers = [
+    restrictToVerticalAxis,
+    restrictToParentElement,
+  ]
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over?.id) {
+      const activeIndex = (active.data.current?.sortable as { index?: number })?.index
+      const overIndex = (over.data.current?.sortable as { index?: number })?.index
+      
+      console.log({ activeIndex, overIndex })
+
+      if (activeIndex !== undefined && overIndex !== undefined) {
+        fieldArray.move(activeIndex, overIndex)
+      }
+    }
   }
 
   const user = form.watch()
@@ -88,7 +126,7 @@ export default function CreateProfile() {
     : "/default_avatar.png"
 
   return (
-    <div className="flex h-full flex-col items-center sm:h-[calc(100vh-5rem)] sm:flex-row">
+    <main className="sm:h-screen flex flex-col items-center sm:flex-row sm:overflow-hidden">
       {/* Form */}
       <div className="h-full w-full mx-auto sm:overflow-auto">
         <Form {...form}>
@@ -144,40 +182,29 @@ export default function CreateProfile() {
               )}
             />
             <div className="flex flex-col gap-4">
-              {fieldArray.fields.map((link, index) => (
-                <div className="flex flex-col gap-2" key={link.id}>
-                  <div className="flex justify-between items-center">
-                    <Label>Link {index + 1}</Label>
-                    <button onClick={() => fieldArray.remove(index)}>
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={`links.${index}.name`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="Example" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`links.${index}.href`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
+              <div className="flex flex-col gap-4">
+                <DndContext
+                  collisionDetection={closestCorners}
+                  modifiers={modifiers}
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={fieldArray.fields}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {fieldArray.fields.map((link, index) => (
+                      <DraggableLink
+                        id={link.id}
+                        index={index}
+                        key={index}
+                        control={form.control}
+                        fieldArray={fieldArray}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
               {!user.links.length && (
                 <div className="flex flex-col gap-2">
                   <Label>Social Links</Label>
@@ -277,11 +304,10 @@ export default function CreateProfile() {
       >
         <div className="w-full max-w-md flex flex-col gap-12 p-14 pt-20">
           <div className="flex flex-col items-center">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={avatar}
               alt={avatar}
-              width={160}
-              height={160}
               className="h-32 w-32 rounded-full border border-[var(--secondary)] sm:h-40 sm:w-40"
             />
             <span className="break-all pt-6 text-center text-2xl font-bold text-[var(--secondary)]">
@@ -296,17 +322,16 @@ export default function CreateProfile() {
           </div>
           <div className="flex flex-col gap-6">
             {user.links.map((link, index) => (
-              <a
+              <button
                 key={index}
-                href={link.href}
                 className="grid h-14 w-full place-items-center rounded-full border border-[var(--secondary)] bg-[var(--accent)] text-xl font-medium shadow-[4px_4px_0px_0px_var(--secondary)] duration-300 active:translate-x-1 active:translate-y-1 active:shadow-none"
               >
                 {link.name}
-              </a>
+              </button>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

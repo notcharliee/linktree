@@ -1,6 +1,5 @@
 import crypto from "crypto"
 
-import Image from "next/image"
 import { notFound } from "next/navigation"
 
 import { db } from "~/lib/db"
@@ -53,11 +52,10 @@ export default async function Profile({
     >
       <div className="container mx-auto flex w-full max-w-md flex-col gap-12 p-14 pt-20">
         <div className="flex flex-col items-center text-[var(--secondary)]">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={avatar}
-            alt={avatarURL}
-            width={160}
-            height={160}
+            alt={"User Avatar"}
             className="h-32 w-32 rounded-full border border-[var(--secondary)] sm:h-40 sm:w-40"
           />
           <span className="pt-6 text-2xl font-bold">@{user.username}</span>
