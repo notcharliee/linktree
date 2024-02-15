@@ -1,10 +1,6 @@
 import * as crypto from "crypto"
-import { readFileSync } from "fs"
-import { dirname, resolve } from "path"
-import { fileURLToPath } from "url"
+import words from "./words"
 
-const __filename = fileURLToPath(import.meta.url)
-const words = readFileSync(resolve(dirname(__filename),"./words.txt"),"utf8").split('\n')
 let randomBytes: Buffer
 let randomIndex: number
 
