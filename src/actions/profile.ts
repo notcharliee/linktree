@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto"
 
+import { bcryptHash } from "~/lib/crypto/bcrypt-hash"
 import { generatePassphrase } from "~/lib/crypto/generate-passphrase"
 import { users as usersSchema, profiles as profilesSchema, links as linksSchema } from "~/lib/schema"
 import { db } from "~/lib/db"
@@ -21,10 +22,13 @@ interface CreateProfileParams {
 }
 
 export const createProfile = async (params: CreateProfileParams) => {
+  const passphrase = generatePassphrase()
+  const hashedPassphrase = await bcryptHash(passphrase)
+
   const user = {
     id: randomUUID(),
     username: params.username,
-    passphrase: generatePassphrase(),
+    passphrase: hashedPassphrase,
     email: params.email,
   }
 
@@ -48,7 +52,10 @@ export const createProfile = async (params: CreateProfileParams) => {
   if (links.length) await db.insert(linksSchema).values(links)
 
   return {
-    ...user,
+    id: user.id,
+    username: user.username,
+    passphrase,
+    email: user.email,
     profile,
     links,
   }
