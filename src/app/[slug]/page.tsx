@@ -22,22 +22,16 @@ export default async function Profile({
 
   if (!user) notFound()
 
-  const avatarURL = user.email
-    ? "https://www.gravatar.com/avatar/" +
-      crypto
-        .createHash("md5")
-        .update(user.email.toLowerCase().trim())
-        .digest("hex") +
-      "?s=256"
-    : "/default_avatar.png"
-
-  const avatar =
+  const avatar = user.email ? (
     "data:image/png;base64," +
     btoa(
       String.fromCharCode(
-        ...new Uint8Array(await (await fetch(avatarURL)).arrayBuffer()),
+        ...new Uint8Array(await (await fetch(
+          "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email.toLowerCase().trim()).digest("hex") + "?s=256"
+        )).arrayBuffer()),
       ),
     )
+  ) : "/default_avatar.png"
 
   return (
     <main
