@@ -5,7 +5,7 @@ export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).unique().primaryKey(),
   username: varchar("username", { length: 32 }).unique().notNull(),
   passphrase: varchar("passphrase", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).unique(),
+  email: varchar("email", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 })
