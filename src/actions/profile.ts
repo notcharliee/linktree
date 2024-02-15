@@ -1,8 +1,8 @@
 "use server"
 
 import { randomUUID } from "crypto"
-import { generate as generatePassphrase } from "generate-passphrase"
 
+import { generatePassphrase } from "~/lib/crypto/generate-passphrase"
 import { users as usersSchema, profiles as profilesSchema, links as linksSchema } from "~/lib/schema"
 import { db } from "~/lib/db"
 
@@ -21,16 +21,10 @@ interface CreateProfileParams {
 }
 
 export const createProfile = async (params: CreateProfileParams) => {
-  const passphrase = generatePassphrase({
-    length: 12,
-    numbers: false,
-    separator: " ",
-  })
-
   const user = {
     id: randomUUID(),
     username: params.username,
-    passphrase,
+    passphrase: generatePassphrase(),
     email: params.email,
   }
 
@@ -51,7 +45,7 @@ export const createProfile = async (params: CreateProfileParams) => {
 
   await db.insert(usersSchema).values(user)
   await db.insert(profilesSchema).values(profile)
-  await db.insert(linksSchema).values(links)
+  if (links.length) await db.insert(linksSchema).values(links)
 
   return {
     ...user,
